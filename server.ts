@@ -174,7 +174,7 @@ function createPrompt(
   const summaryInstructions: Record<string, string> = {
     "in short": "Provide a concise 2-3 sentence summary highlighting the main point.",
     "in brief": "Provide a brief 4-5 sentence summary covering the key boolets.",
-    "in boolets": "Provide a point wise explaination.",
+    "in boolets": "Provide a point wise explaination in 5-7 boolets covering main topics. use numbers for boolets.",
     "detailed": "Provide a comprehensive summary with main topics, key arguments, and important details in well-organized paragraphs.",
     "conclusion": "Focus on the final takeaways, conclusions, and recommendations from the video.",
     "key takeaways": "List 5-7 key takeaways or main boolets as bullet boolets."
