@@ -4,6 +4,10 @@ import { YoutubeTranscript } from "youtube-transcript";
 import dotenv from "dotenv";
 import axios from "axios";
 import cors from "cors";
+import { createPrompt } from "./createPromp/createPrompt.js";
+import { extractVideoId } from "./extractVideoId/extractVideoId.js";
+import { scrapeYouTubeMetadata } from "./scrapYoutubeMetaData/scrapYoutubeMetaData.js";
+import { fetchYouTubeMetadata } from "./fetchYouTubeMetadata/fetchYouTubeMetadata.js";
 dotenv.config();
 
 const app = express();
@@ -35,8 +39,6 @@ if (!process.env.GOOGLE_API_KEY) {
   process.exit(1);
 }
 
-// Optional: YouTube Data API key for metadata fallback
-const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY as string);
 // Changed to gemini-2.5-flash for reliability and robustness
@@ -51,204 +53,6 @@ interface SummarizeRequest {
     | "detailed"
     | "conclusion"
     | "key takeaways";
-}
-
-/**
- * Fetches YouTube video metadata using YouTube Data API v3
- */
-async function fetchYouTubeMetadata(videoId: string): Promise<{
-  title: string;
-  description: string;
-  channelTitle: string;
-  tags?: string[];
-  categoryId?: string;
-} | null> {
-  if (!YOUTUBE_API_KEY) {
-    console.warn(
-      "YOUTUBE_API_KEY not set, skipping official API metadata fetch"
-    );
-    return null;
-  }
-
-  try {
-    const response = await axios.get(
-      `https://www.googleapis.com/youtube/v3/videos`,
-      {
-        params: {
-          part: "snippet",
-          id: videoId,
-          key: YOUTUBE_API_KEY,
-        },
-      }
-    );
-
-    if (response.data.items && response.data.items.length > 0) {
-      const snippet = response.data.items[0].snippet;
-      return {
-        title: snippet.title,
-        description: snippet.description,
-        channelTitle: snippet.channelTitle,
-        tags: snippet.tags || [],
-        categoryId: snippet.categoryId,
-      };
-    }
-    return null;
-  } catch (error) {
-    console.error(
-      "Error fetching YouTube metadata from API:",
-      (error as any).message
-    );
-    return null;
-  }
-}
-
-/**
- * Scrapes basic metadata from YouTube page (fallback method)
- */
-async function scrapeYouTubeMetadata(videoId: string): Promise<{
-  title: string;
-  description: string;
-  channelTitle: string;
-} | null> {
-  try {
-    const url = `https://www.youtube.com/watch?v=${videoId}`;
-    const response = await axios.get(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      },
-    });
-
-    const html = response.data;
-
-    // Extract title
-    const titleMatch = html.match(/<title>(.+?)<\/title>/);
-    const title = titleMatch
-      ? titleMatch[1].replace(" - YouTube", "").trim()
-      : "";
-
-    // Extract description from meta tag
-    const descMatch = html.match(/<meta name="description" content="(.+?)"/);
-    const description = descMatch ? descMatch[1] : "";
-
-    // Extract channel name
-    const channelMatch = html.match(/"author":"(.+?)"/);
-    const channelTitle = channelMatch ? channelMatch[1] : ""; // Fixed: Changed channelTitle[1] to channelMatch[1]
-
-    if (title && channelTitle) {
-      return { title, description, channelTitle };
-    }
-    return null;
-  } catch (error) {
-    console.error(" Error scraping YouTube metadata:", (error as any).message);
-    return null;
-  }
-}
-
-/**
- * Extracts the video ID from a YouTube URL.
- * Supports various YouTube URL formats.
- */
-function extractVideoId(url: string): string | null {
-  try {
-    const patterns = [
-      /(?:youtube\.com\/watch\?v=)([^&\s]+)/,
-      /(?:youtube\.com\/embed\/)([^?\s]+)/,
-      /(?:youtu\.be\/)([^?\s]+)/,
-      /(?:youtube\.com\/v\/)([^?\s]+)/,
-    ];
-
-    for (const pattern of patterns) {
-      const match = url.match(pattern);
-      if (match && match[1]) {
-        return match[1];
-      }
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Creates a context-aware prompt based on summary type
- */
-function createPrompt(
-  summarizeType: string,
-  transcriptText: string,
-  url: string,
-  usedTranscript: boolean,
-  metadata?: {
-    title: string;
-    description: string;
-    channelTitle: string;
-    tags?: string[];
-  } | null
-): string {
-  const summaryInstructions: Record<string, string> = {
-    "in short":
-      "Provide a concise 2-3 sentence summary highlighting the main point.",
-    "in brief":
-      "Provide a brief 4-5 sentence summary covering the key boolets.",
-    "in boolets":
-      "Provide a point wise explaination in 5-7 boolets covering main topics. use numbers for boolets.",
-    detailed:
-      "Provide a comprehensive summary with main topics, key arguments, and important details in well-organized paragraphs.",
-    conclusion:
-      "Focus on the final takeaways, conclusions, and recommendations from the video.",
-    "key takeaways":
-      "List 5-7 key takeaways or main boolets as bullet boolets.",
-  };
-
-  const instruction =
-    summaryInstructions[summarizeType] || summaryInstructions["in brief"];
-
-  if (usedTranscript) {
-    // Case 1: Transcript Available
-    return `You are an expert at summarizing YouTube videos. Analyze the following transcript and create a ${summarizeType} summary.
-
-${instruction}
-
-Be specific, accurate, and well-structured. Focus on the actual content.
-
-Transcript:
-
-${transcriptText.substring(0, 30000)} 
-
-**CRITICAL**: The final output must be *only* the summary text, with no preamble or headings.
-
-Summary:`;
-  } else if (metadata) {
-    // Case 2: Transcript Missing, Metadata Available (Model is instructed to use Google Search here)
-    return `You are an expert at summarizing YouTube videos. You must generate a ${summarizeType} summary of the video based on the provided metadata and any external context you can find using your tools.
-
-Metadata to use:
-Title: ${metadata.title}
-Channel: ${metadata.channelTitle}
-Description: ${metadata.description}
-${
-  metadata.tags && metadata.tags.length > 0
-    ? `Tags: ${metadata.tags.join(", ")}`
-    : ""
-}
-
-Instructions:
-1. Adhere strictly to the requested summary type and length: ${instruction}
-2. Synthesize the summary using the provided metadata, but use your external knowledge (Google Search) to provide a rich, accurate summary of the video's content.
-3. **CRITICAL**: The final output must be *only* the summary text, with no preamble, headings, or concluding remarks about the source of the information.
-
-Summary:`;
-  } else {
-    // Case 3: Neither Available
-    return `You are analyzing a YouTube video URL: ${url}
-
-IMPORTANT: No transcript or metadata is available for this video. You MUST NOT make up or infer content.
-
-Your response should be EXACTLY in this format:
-"Unable to generate a ${summarizeType} summary because neither transcript nor metadata is available for this video. Please try a different video with available captions/subtitles."
-
-Do not speculate, infer, or create fictional content. Simply return the message above.`;
-  }
 }
 
 app.post("/summarize", async (req: Request, res: Response) => {
