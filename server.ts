@@ -4,7 +4,7 @@ import { YoutubeTranscript } from "youtube-transcript";
 import dotenv from "dotenv";
 import axios from "axios";
 import cors from "cors";
-import { createPrompt } from "./createPromp/createPrompt.js";
+import { createPrompt } from "./createPrompt/createPrompt.js";
 import { extractVideoId } from "./extractVideoId/extractVideoId.js";
 import { scrapeYouTubeMetadata } from "./scrapYoutubeMetaData/scrapYoutubeMetaData.js";
 import { fetchYouTubeMetadata } from "./fetchYouTubeMetadata/fetchYouTubeMetadata.js";
