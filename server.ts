@@ -3,10 +3,18 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { YoutubeTranscript } from "youtube-transcript";
 import dotenv from "dotenv";
 import axios from "axios";
-
+import cors from "cors";
 dotenv.config();
 
 const app = express();
+
+const corsOption = {
+  origin: "http://localhost:5173",
+  METHODS: ["GET", "POST", "PUT", "DELETE"],
+  Credential: true,
+};
+
+app.use(cors(corsOption));
 app.use(express.json());
 
 // Removed the custom interfaces (GeminiConfig and GenerateContentRequestPayload)
@@ -14,16 +22,16 @@ app.use(express.json());
 
 // Health check endpoint
 app.get("/health", (_req: Request, res: Response) => {
-  res.json({ 
+  res.json({
     status: "ok",
     message: "YouTube Transcript Summarizer API is running!",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
 // Validate API key exists
 if (!process.env.GOOGLE_API_KEY) {
-  console.error("❌ ERROR: GOOGLE_API_KEY is not set in environment variables");
+  console.error("ERROR: GOOGLE_API_KEY is not set in environment variables");
   process.exit(1);
 }
 
@@ -56,7 +64,9 @@ async function fetchYouTubeMetadata(videoId: string): Promise<{
   categoryId?: string;
 } | null> {
   if (!YOUTUBE_API_KEY) {
-    console.warn("⚠️ YOUTUBE_API_KEY not set, skipping official API metadata fetch");
+    console.warn(
+      "YOUTUBE_API_KEY not set, skipping official API metadata fetch"
+    );
     return null;
   }
 
@@ -84,7 +94,10 @@ async function fetchYouTubeMetadata(videoId: string): Promise<{
     }
     return null;
   } catch (error) {
-    console.error("❌ Error fetching YouTube metadata from API:", (error as any).message);
+    console.error(
+      "Error fetching YouTube metadata from API:",
+      (error as any).message
+    );
     return null;
   }
 }
@@ -101,7 +114,8 @@ async function scrapeYouTubeMetadata(videoId: string): Promise<{
     const url = `https://www.youtube.com/watch?v=${videoId}`;
     const response = await axios.get(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
       },
     });
 
@@ -109,12 +123,12 @@ async function scrapeYouTubeMetadata(videoId: string): Promise<{
 
     // Extract title
     const titleMatch = html.match(/<title>(.+?)<\/title>/);
-    const title = titleMatch ? titleMatch[1].replace(" - YouTube", "").trim() : "";
+    const title = titleMatch
+      ? titleMatch[1].replace(" - YouTube", "").trim()
+      : "";
 
     // Extract description from meta tag
-    const descMatch = html.match(
-      /<meta name="description" content="(.+?)"/
-    );
+    const descMatch = html.match(/<meta name="description" content="(.+?)"/);
     const description = descMatch ? descMatch[1] : "";
 
     // Extract channel name
@@ -126,7 +140,7 @@ async function scrapeYouTubeMetadata(videoId: string): Promise<{
     }
     return null;
   } catch (error) {
-    console.error("❌ Error scraping YouTube metadata:", (error as any).message);
+    console.error("Error scraping YouTube metadata:", (error as any).message);
     return null;
   }
 }
@@ -172,15 +186,22 @@ function createPrompt(
   } | null
 ): string {
   const summaryInstructions: Record<string, string> = {
-    "in short": "Provide a concise 2-3 sentence summary highlighting the main point.",
-    "in brief": "Provide a brief 4-5 sentence summary covering the key boolets.",
-    "in boolets": "Provide a point wise explaination in 5-7 boolets covering main topics. use numbers for boolets.",
-    "detailed": "Provide a comprehensive summary with main topics, key arguments, and important details in well-organized paragraphs.",
-    "conclusion": "Focus on the final takeaways, conclusions, and recommendations from the video.",
-    "key takeaways": "List 5-7 key takeaways or main boolets as bullet boolets."
+    "in short":
+      "Provide a concise 2-3 sentence summary highlighting the main point.",
+    "in brief":
+      "Provide a brief 4-5 sentence summary covering the key boolets.",
+    "in boolets":
+      "Provide a point wise explaination in 5-7 boolets covering main topics. use numbers for boolets.",
+    detailed:
+      "Provide a comprehensive summary with main topics, key arguments, and important details in well-organized paragraphs.",
+    conclusion:
+      "Focus on the final takeaways, conclusions, and recommendations from the video.",
+    "key takeaways":
+      "List 5-7 key takeaways or main boolets as bullet boolets.",
   };
 
-  const instruction = summaryInstructions[summarizeType] || summaryInstructions["in brief"];
+  const instruction =
+    summaryInstructions[summarizeType] || summaryInstructions["in brief"];
 
   if (usedTranscript) {
     // Case 1: Transcript Available
@@ -205,7 +226,11 @@ Metadata to use:
 Title: ${metadata.title}
 Channel: ${metadata.channelTitle}
 Description: ${metadata.description}
-${metadata.tags && metadata.tags.length > 0 ? `Tags: ${metadata.tags.join(", ")}` : ""}
+${
+  metadata.tags && metadata.tags.length > 0
+    ? `Tags: ${metadata.tags.join(", ")}`
+    : ""
+}
 
 Instructions:
 1. Adhere strictly to the requested summary type and length: ${instruction}
@@ -231,26 +256,33 @@ app.post("/summarize", async (req: Request, res: Response) => {
 
   // Validation
   if (!url || !summarizeType) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       error: "Missing required fields",
-      details: "Both 'url' and 'summarizeType' are required" 
+      details: "Both 'url' and 'summarizeType' are required",
     });
   }
 
-  const validTypes = ["in short", "in brief", "in boolets" ,"detailed", "conclusion", "key takeaways"];
+  const validTypes = [
+    "in short",
+    "in brief",
+    "in boolets",
+    "detailed",
+    "conclusion",
+    "key takeaways",
+  ];
   if (!validTypes.includes(summarizeType)) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       error: "Invalid summarizeType",
-      details: `Must be one of: ${validTypes.join(", ")}` 
+      details: `Must be one of: ${validTypes.join(", ")}`,
     });
   }
 
   try {
     const videoId = extractVideoId(url);
     if (!videoId) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "Invalid YouTube URL",
-        details: "Please provide a valid YouTube video URL" 
+        details: "Please provide a valid YouTube video URL",
       });
     }
 
@@ -260,74 +292,90 @@ app.post("/summarize", async (req: Request, res: Response) => {
 
     // Attempt to fetch transcript
     try {
-      console.log(`📝 Fetching transcript for video ID: ${videoId}`);
+      console.log(`Fetching transcript for video ID: ${videoId}`);
       const transcript = await YoutubeTranscript.fetchTranscript(videoId);
       transcriptText = transcript.map((t) => t.text).join(" ");
-      
+
       // Only use transcript if substantial
       if (transcriptText.length > 100) {
         usedTranscript = true;
-        console.log(`✅ Transcript fetched successfully (${transcriptText.length} characters)`);
+        console.log(
+          `Transcript fetched successfully (${transcriptText.length} characters)`
+        );
       } else {
-        console.warn("⚠️ Transcript too short, falling back to metadata and search");
+        console.warn(
+          "Transcript too short, falling back to metadata and search"
+        );
         transcriptText = "";
         usedTranscript = false;
       }
     } catch (error) {
-      console.warn("⚠️ No transcript available, will try metadata and search");
+      console.warn("No transcript available, will try metadata and search");
       transcriptText = "";
       usedTranscript = false;
     }
 
     // If no transcript, try to fetch metadata
     if (!usedTranscript) {
-      console.log("📊 Attempting to fetch video metadata...");
-      
+      console.log("Attempting to fetch video metadata...");
+
       // Try YouTube Data API first
       metadata = await fetchYouTubeMetadata(videoId);
-      
+
       // Fallback to web scraping if API not available or failed
       if (!metadata) {
-        console.log("🔍 Falling back to web scraping for metadata...");
+        console.log("Falling back to web scraping for metadata...");
         metadata = await scrapeYouTubeMetadata(videoId);
       }
 
       if (metadata) {
-        console.log(`✅ Metadata fetched: "${metadata.title}" by ${metadata.channelTitle}`);
+        console.log(
+          `Metadata fetched: "${metadata.title}" by ${metadata.channelTitle}`
+        );
       } else {
-        console.warn("⚠️ No metadata could be retrieved");
+        console.warn("No metadata could be retrieved");
       }
     }
 
     // Generate prompt
-    const prompt = createPrompt(summarizeType, transcriptText, url, usedTranscript, metadata);
+    const prompt = createPrompt(
+      summarizeType,
+      transcriptText,
+      url,
+      usedTranscript,
+      metadata
+    );
 
     // --- FIX IMPLEMENTATION: Correct SDK payload structure ---
     let searchEnabled = false;
     // We must define 'tools' at the root level of the request object for the SDK
-    let tools: any[] | undefined = undefined; 
+    let tools: any[] | undefined = undefined;
 
     // If we only have metadata (or nothing), enable Google Search for grounding and context
     if (!usedTranscript && metadata) {
       // Correct structure: tools is an array of tool objects, placed at the root of the request.
-      tools = [{ googleSearch: {} }]; 
+      tools = [{ googleSearch: {} }];
       searchEnabled = true;
-      console.log("🌍 Enabling Google Search grounding for enhanced metadata summary.");
+      console.log(
+        "Enabling Google Search grounding for enhanced metadata summary."
+      );
     }
     // ----------------------------------------------------
 
     // Call Gemini API
-    console.log(`🤖 Generating ${summarizeType} summary...`);
-    
+    console.log(`Generating ${summarizeType} summary...`);
+
     // Construct the request payload directly as an object literal.
     // Use 'any' type for simplicity to match SDK's runtime expectations.
     const requestPayload: any = {
-        contents: [{ 
-            role: "user", 
-            parts: [{ text: prompt }] 
-        }],
-        // Conditionally include 'tools' directly (fixes the "Unknown name 'tools' at 'generation_config'" error)
-        ...(tools && { tools }),
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt }],
+        },
+      ],
+      // Conditionally include 'tools' directly (fixes the "Unknown name 'tools' at 'generation_config'" error)
+      ...(tools && { tools }),
     };
 
     const result = await model.generateContent(requestPayload);
@@ -336,48 +384,53 @@ app.post("/summarize", async (req: Request, res: Response) => {
 
     // Successful response
     res.json({
-      success: true,
+      ok: true,
       videoId,
       type: summarizeType,
       usedTranscript,
       usedMetadata: !usedTranscript && metadata !== null,
       usedSearchGrounding: searchEnabled, // Include new field for visibility
-      metadata: metadata ? {
-        title: metadata.title,
-        channel: metadata.channelTitle
-      } : undefined,
+      metadata: metadata
+        ? {
+            title: metadata.title,
+            channel: metadata.channelTitle,
+          }
+        : undefined,
       url,
       summary,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
-    console.log(`✅ Summary generated successfully (Search Grounding: ${searchEnabled})`);
+    console.log(
+      `Summary generated successfully (Search Grounding: ${searchEnabled})`
+    );
   } catch (error: unknown) {
-    console.error("❌ Error during summarization:", error);
-    
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    console.error("Error during summarization:", error);
+
+    const errorMessage =
+      error instanceof Error ? error.message : "An unknown error occurred";
     const errorDetails = error instanceof Error ? error.stack : undefined;
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       error: "Summarization failed",
       message: errorMessage,
-      ...(process.env.NODE_ENV === 'development' && { details: errorDetails })
+      ...(process.env.NODE_ENV === "development" && { details: errorDetails }),
     });
   }
 });
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
-  res.status(404).json({ 
+  res.status(404).json({
     error: "Not Found",
-    message: "The requested endpoint does not exist" 
+    message: "The requested endpoint does not exist",
   });
 });
 
 // Start server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📍 Health check: http://localhost:${PORT}/health`);
-  console.log(`📍 Summarize endpoint: POST http://localhost:${PORT}/summarize`);
+  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/health`);
+  console.log(`Summarize endpoint: POST http://localhost:${PORT}/summarize`);
 });
