@@ -140,7 +140,7 @@ async function scrapeYouTubeMetadata(videoId: string): Promise<{
     }
     return null;
   } catch (error) {
-    console.error("Error scraping YouTube metadata:", (error as any).message);
+    console.error(" Error scraping YouTube metadata:", (error as any).message);
     return null;
   }
 }
