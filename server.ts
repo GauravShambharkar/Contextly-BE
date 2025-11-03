@@ -25,7 +25,7 @@ app.use(express.json());
 // to resolve the TypeScript incompatibility issue with the SDK's internal types.
 
 // Health check endpoint
-app.get("/health", (_req: Request, res: Response) => {
+app.get("https://contextly-backend.onrender.com/health", (_req: Request, res: Response) => {
   res.json({
     status: "ok",
     message: "YouTube Transcript Summarizer API is running!",
@@ -54,7 +54,7 @@ interface SummarizeRequest {
     | "key takeaways";
 }
 
-app.post("/summarize", async (req: Request, res: Response) => {
+app.post("https://contextly-backend.onrender.com/summarize", async (req: Request, res: Response) => {
   const { url, summarizeType }: SummarizeRequest = req.body;
 
   // Validation
