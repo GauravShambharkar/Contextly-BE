@@ -39,7 +39,6 @@ if (!process.env.GOOGLE_API_KEY) {
   process.exit(1);
 }
 
-
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY as string);
 // Changed to gemini-2.5-flash for reliability and robustness
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });

@@ -19,8 +19,8 @@
   "main": "server.ts",
   "type": "module",
   "scripts": {
-    "server": "nodemon dist/server.js",
-    "build": "tsc -watch",
+    "start": "node dist/server.js",
+    "build": "tsc ",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
