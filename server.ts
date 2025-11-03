@@ -13,7 +13,7 @@ dotenv.config();
 const app = express();
 
 const corsOption = {
-  origin: "https://contextly-lovat.vercel.app",
+  origin: "https://contextly-fe.vercel.app",
   METHODS: ["GET", "POST", "PUT", "DELETE"],
   Credential: true,
 };
