@@ -13,7 +13,7 @@ dotenv.config();
 const app = express();
 
 const corsOption = {
-  origin: "http://localhost:5173",
+  origin: "https://contextly-frontend-khaki.vercel.app",
   METHODS: ["GET", "POST", "PUT", "DELETE"],
   Credential: true,
 };
