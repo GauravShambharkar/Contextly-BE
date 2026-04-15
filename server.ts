@@ -194,12 +194,12 @@ app.post("/summarize", async (req: Request, res: Response) => {
     let tools: any[] | undefined = undefined;
 
     // If we only have metadata (or nothing), enable Google Search for grounding and context
-    if (!usedTranscript && metadata) {
+    if (!usedTranscript) {
       // Correct structure: tools is an array of tool objects, placed at the root of the request.
       tools = [{ googleSearch: {} }];
       searchEnabled = true;
       console.log(
-        "Enabling Google Search grounding for enhanced metadata summary."
+        "Enabling Google Search grounding for enhanced summary (Transcript missing)."
       );
     }
     // ----------------------------------------------------
@@ -237,7 +237,7 @@ app.post("/summarize", async (req: Request, res: Response) => {
           title: metadata.title,
           channel: metadata.channelTitle,
         }
-        : undefined,
+        : null,
       url,
       summary,
       timestamp: new Date().toISOString(),

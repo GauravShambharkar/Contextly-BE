@@ -62,14 +62,17 @@ Instructions:
 
 Summary:`;
   } else {
-    // Case 3: Neither Available
+    // Case 3: Neither Available (But Search is enabled in server.ts)
     return `You are analyzing a YouTube video URL: ${url}
 
-IMPORTANT: No transcript or metadata is available for this video. You MUST NOT make up or infer content.
+IMPORTANT: No transcript or metadata was provided directly by the application. 
+You MUST use your tools (Google Search) to find information about this video's content, title, and creator.
 
-Your response should be EXACTLY in this format:
-"Unable to generate a ${summarizeType} summary because neither transcript nor metadata is available for this video. Please try a different video with available captions/subtitles."
+Instructions:
+1. Find the video content using the provided URL: ${url}
+2. Generate a ${summarizeType} summary: ${instruction}
+3. **CRITICAL**: The final output must be *only* the summary text, with no preamble or headings.
 
-Do not speculate, infer, or create fictional content. Simply return the message above.`;
+Summary:`;
   }
 }
