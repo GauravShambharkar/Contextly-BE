@@ -1,0 +1,107 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "YouTube Transcript Summarizer API",
+    "description": "API for summarizing YouTube videos using transcripts, metadata, and Google Gemini 2.5 Flash.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4000",
+      "description": "Local server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Health",
+      "description": "Endpoints related to checking API connectivity and health status."
+    },
+    {
+      "name": "main",
+      "description": "Main AI-powered tools such as YouTube summarization."
+    },
+    {
+      "name": "tool",
+      "description": "Additional helper tools and utilities."
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/newHealthRoute": {
+      "get": {
+        "tags": ["Health"],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/tool": {
+      "get": {
+        "tags": ["tool"],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/summarize": {
+      "post": {
+        "tags": ["main"],
+        "description": "",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Summarization request details.",
+            "schema": {
+              "$ref": "#/components/schemas/SummarizeRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SummarizeRequest": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "example": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+          },
+          "summarizeType": {
+            "type": "string",
+            "example": "detailed"
+          }
+        }
+      }
+    }
+  }
+}

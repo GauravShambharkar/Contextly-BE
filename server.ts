@@ -8,30 +8,63 @@ import { createPrompt } from "./createPrompt/createPrompt.js";
 import { extractVideoId } from "./extractVideoId/extractVideoId.js";
 import { scrapeYouTubeMetadata } from "./scrapYoutubeMetaData/scrapYoutubeMetaData.js";
 import { fetchYouTubeMetadata } from "./fetchYouTubeMetadata/fetchYouTubeMetadata.js";
+import fs from "fs";
+import { apiReference } from '@scalar/express-api-reference';
+
 dotenv.config();
 
 const app = express();
 
 const corsOption = {
-  origin: "https://contextly-fe.vercel.app",
+  origin: ["https://contextly-fe.vercel.app", "http://localhost:5173"],
   METHODS: ["GET", "POST", "PUT", "DELETE"],
   Credential: true,
 };
 
 app.use(cors(corsOption));
 app.use(express.json());
+const openApiSpec = JSON.parse(fs.readFileSync("./openapi.json", "utf-8"));
+
+app.use(
+  "/docs",
+  apiReference({
+    theme: "purple",
+    content: openApiSpec as any,
+  })
+);
 
 // Removed the custom interfaces (GeminiConfig and GenerateContentRequestPayload)
 // to resolve the TypeScript incompatibility issue with the SDK's internal types.
 
 // Health check endpoint
 app.get("/health", (_req: Request, res: Response) => {
+  // #swagger.tags = ['Health']
   res.json({
     status: "ok",
     message: "YouTube Transcript Summarizer API is running!",
     timestamp: new Date().toISOString(),
   });
 });
+
+
+app.get("/newHealthRoute", (_req: Request, res: Response) => {
+  // #swagger.tags = ['Health']
+  res.json({
+    status: "ok",
+    message: "YouTube Transcript Summarizer API is running!",
+    timestamp: new Date().toISOString(),
+  });
+});
+app.get("/tool", (_req: Request, res: Response) => {
+  // #swagger.tags = ['tool']
+  res.json({
+    status: "ok",
+    message: "YouTube Transcript Summarizer API is running!",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+
 
 // Validate API key exists
 if (!process.env.GOOGLE_API_KEY) {
@@ -46,15 +79,21 @@ const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 interface SummarizeRequest {
   url: string;
   summarizeType:
-    | "in short"
-    | "in brief"
-    | "in boolets"
-    | "detailed"
-    | "conclusion"
-    | "key takeaways";
+  | "in short"
+  | "in brief"
+  | "in boolets"
+  | "detailed"
+  | "conclusion"
+  | "key takeaways";
 }
 
 app.post("/summarize", async (req: Request, res: Response) => {
+  // #swagger.tags = ['main']
+  /* #swagger.parameters['body'] = {
+        in: 'body',
+        description: 'Summarization request details.',
+        schema: { $ref: '#/definitions/SummarizeRequest' }
+  } */
   const { url, summarizeType }: SummarizeRequest = req.body;
 
   // Validation
@@ -195,9 +234,9 @@ app.post("/summarize", async (req: Request, res: Response) => {
       usedSearchGrounding: searchEnabled, // Include new field for visibility
       metadata: metadata
         ? {
-            title: metadata.title,
-            channel: metadata.channelTitle,
-          }
+          title: metadata.title,
+          channel: metadata.channelTitle,
+        }
         : undefined,
       url,
       summary,
