@@ -37,7 +37,7 @@ app.use(
 // to resolve the TypeScript incompatibility issue with the SDK's internal types.
 
 // Health check endpoint
-app.get("/health", (_req: Request, res: Response) => {
+app.get("/", (_req: Request, res: Response) => {
   // #swagger.tags = ['Health']
   res.json({
     status: "ok",
@@ -73,8 +73,9 @@ if (!process.env.GOOGLE_API_KEY) {
 }
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY as string);
-// Changed to gemini-2.5-flash for reliability and robustness
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+// Using gemini-1.5-flash for stable tool support and performance
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
 
 interface SummarizeRequest {
   url: string;
