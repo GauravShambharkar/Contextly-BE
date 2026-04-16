@@ -21,7 +21,8 @@
   "main": "server.ts",
   "type": "module",
   "scripts": {
-    "start": "node dist/server.js",
+    "start": "tsc && node dist/server.js",
+    "dev": "nodemon --loader ts-node/esm server.ts",
     "generate-docs": "node swagger.js",
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"

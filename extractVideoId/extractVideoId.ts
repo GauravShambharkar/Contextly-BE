@@ -1,7 +1,4 @@
-/**
- * Extracts the video ID from a YouTube URL.
- * Supports various YouTube URL formats.
- */
+
 
 export function extractVideoId(url: string): string | null {
   try {

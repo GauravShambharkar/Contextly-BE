@@ -21,9 +21,9 @@ export function createPrompt(
       "Provide a brief 4-5 sentence summary covering the key boolets.",
     "in boolets":
       "Provide a point wise explaination in 5-7 boolets covering main topics. use numbers for boolets.",
-    detailed:
+    "detailed":
       "Provide a comprehensive summary with main topics, key arguments, and important details in well-organized paragraphs.",
-    conclusion:
+    "conclusion":
       "Focus on the final takeaways, conclusions, and recommendations from the video.",
     "key takeaways":
       "List 5-7 key takeaways or main boolets as bullet boolets.",
@@ -49,11 +49,10 @@ Metadata to use:
 Title: ${metadata.title}
 Channel: ${metadata.channelTitle}
 Description: ${metadata.description}
-${
-  metadata.tags && metadata.tags.length > 0
-    ? `Tags: ${metadata.tags.join(", ")}`
-    : ""
-}
+${metadata.tags && metadata.tags.length > 0
+        ? `Tags: ${metadata.tags.join(", ")}`
+        : ""
+      }
 
 Instructions:
 1. Adhere strictly to the requested summary type and length: ${instruction}

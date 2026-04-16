@@ -16,9 +16,9 @@ dotenv.config();
 const app = express();
 
 const corsOption = {
-  origin: ["https://contextly-fe.vercel.app", "http://localhost:5173"],
-  METHODS: ["GET", "POST", "PUT", "DELETE"],
-  Credential: true,
+  origin: ["https://contextly-fe.vercel.app", "http://localhost:5173", "http://127.0.0.1:5173"],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true,
 };
 
 app.use(cors(corsOption));
@@ -73,8 +73,8 @@ if (!process.env.GOOGLE_API_KEY) {
 }
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY as string);
-// Using gemini-1.5-flash for stable tool support and performance
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+// Using gemini-2.0-flash (confirmed available for this API key)
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 
 interface SummarizeRequest {
@@ -196,8 +196,8 @@ app.post("/summarize", async (req: Request, res: Response) => {
 
     // If we only have metadata (or nothing), enable Google Search for grounding and context
     if (!usedTranscript) {
-      // Correct structure: tools is an array of tool objects, placed at the root of the request.
-      tools = [{ googleSearch: {} }];
+      // Use googleSearchRetrieval for AI Studio / Public API SDK
+      tools = [{ googleSearchRetrieval: {} }];
       searchEnabled = true;
       console.log(
         "Enabling Google Search grounding for enhanced summary (Transcript missing)."
