@@ -1,7 +1,7 @@
 import axios from "axios";
 
 /**
- * Scrapes basic metadata from YouTube page (fallback method)
+ * Fetches basic metadata from YouTube oEmbed API (reliable fallback method)
  */
 export async function scrapeYouTubeMetadata(videoId: string): Promise<{
   title: string;
@@ -9,36 +9,22 @@ export async function scrapeYouTubeMetadata(videoId: string): Promise<{
   channelTitle: string;
 } | null> {
   try {
-    const url = `https://www.youtube.com/watch?v=${videoId}`;
-    const response = await axios.get(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      },
-    });
+    const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+    const response = await axios.get(url);
 
-    const html = response.data;
-
-    // Extract title
-    const titleMatch = html.match(/<title>(.+?)<\/title>/);
-    const title = titleMatch
-      ? titleMatch[1].replace(" - YouTube", "").trim()
-      : "";
-
-    // Extract description from meta tag
-    const descMatch = html.match(/<meta name="description" content="(.+?)"/);
-    const description = descMatch ? descMatch[1] : "";
-
-    // Extract channel name
-    const channelMatch = html.match(/"author":"(.+?)"/);
-    const channelTitle = channelMatch ? channelMatch[1] : ""; // Fixed: Changed channelTitle[1] to channelMatch[1]
-
-    if (title && channelTitle) {
-      return { title, description, channelTitle };
+    const data = response.data;
+    
+    if (data && data.title && data.author_name) {
+      return {
+        title: data.title,
+        description: "", // oEmbed doesn't provide description, but it's enough for UI
+        channelTitle: data.author_name,
+      };
     }
+    
     return null;
   } catch (error) {
-    console.error(" Error scraping YouTube metadata:", (error as any).message);
+    console.error(" Error fetching YouTube oEmbed metadata:", (error as any).message);
     return null;
   }
 }
