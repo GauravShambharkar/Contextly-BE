@@ -31,12 +31,10 @@ export async function getYouTubeData(videoId: string): Promise<YouTubeDataResult
     usedTranscript = false;
   }
 
-  // 2. Fallback to API metadata or web scraping if no transcript
-  if (!usedTranscript) {
-    metadata = await fetchYouTubeMetadata(videoId);
-    if (!metadata) {
-      metadata = await scrapeYouTubeMetadata(videoId);
-    }
+  // 2. Fetch API metadata or web scraping
+  metadata = await fetchYouTubeMetadata(videoId);
+  if (!metadata) {
+    metadata = await scrapeYouTubeMetadata(videoId);
   }
 
   return { transcriptText, usedTranscript, metadata };
